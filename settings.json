@@ -1,5 +1,3 @@
 {
-  "IoTHubConnectionString": "HostName=saschachub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=AeVMLayazGTS9QRMJtFGSSNwdhUdYR5VwCjaafc3DL0=",
-  "IoTHubConnectionStringOK": "HostName=saschachub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=AeVMLayazGTS9QRMJtFGSSNwdhUdYR5VwCjaafc3DL0=",
-  "IoTHubConnectionStringWrongKey": "HostName=saschachub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=8nBQ3SopjF/uBSNtuxc4CiD/o1+Rx26KZJsgjtJVpOQ="
+  "IoTHubConnectionString": "enter your Azure IoT Hub connection string",
 }

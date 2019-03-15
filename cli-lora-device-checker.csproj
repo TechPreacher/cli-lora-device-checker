@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <RootNamespace>cli_lora_device_checker</RootNamespace>
+    <AssemblyName>verifyloradevice</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

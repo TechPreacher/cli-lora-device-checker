@@ -1,14 +1,12 @@
-﻿using Microsoft.Azure.Devices;
-using Microsoft.Azure.Devices.Shared;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using System.Linq;
-
-namespace cli_lora_device_checker
+﻿namespace cli_lora_device_checker
 {
+    using Microsoft.Azure.Devices;
+    using Microsoft.Azure.Devices.Shared;
+    using Newtonsoft.Json.Linq;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+
     public class IoTDeviceHelper
     {
         public async Task<JObject> QueryTwinSingle(string devEui, ConfigurationHelper configurationHelper)

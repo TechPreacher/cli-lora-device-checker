@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace cli_lora_device_checker
+﻿namespace cli_lora_device_checker
 {
+    using System;
+
     public static class Keygen
     {
         public static string Generate(int keyLength)

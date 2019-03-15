@@ -1,12 +1,10 @@
-﻿using Microsoft.Azure.Devices;
-using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-
-namespace cli_lora_device_checker
+﻿namespace cli_lora_device_checker
 {
+    using Microsoft.Azure.Devices;
+    using Microsoft.Extensions.Configuration;
+    using System;
+    using System.IO;
+
     public class ConfigurationHelper
     {
         public string ConnectionString { get; set; }

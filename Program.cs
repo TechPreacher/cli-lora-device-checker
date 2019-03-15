@@ -1,14 +1,7 @@
 ﻿namespace cli_lora_device_checker
 {
     using System;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Devices;
-    using Microsoft.Azure.Devices.Shared;
-    using System.IO;
-    using Microsoft.Extensions.Configuration;
     using CommandLine;
-    using Newtonsoft.Json.Linq;
-    using System.Linq;
 
     public class Program
     {
