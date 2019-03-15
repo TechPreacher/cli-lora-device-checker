@@ -22,7 +22,7 @@
             public string Total { get; set; }
         }
 
-        [Verb("verify", HelpText = "Verify device.")]
+        [Verb("verify", HelpText = "Verify a single device.")]
         public class VerifyOptions
         {
             [Option("deveui",
@@ -31,7 +31,7 @@
             public string DevEui { get; set; }
         }
 
-        [Verb("query", HelpText = "Query device twin.")]
+        [Verb("query", HelpText = "Query a device twin.")]
         public class QueryOptions
         {
             [Option("deveui",
@@ -40,7 +40,7 @@
             public string DevEui { get; set; }
         }
 
-        [Verb("addabpdevice", HelpText = "Add new ABP device.")]
+        [Verb("addabpdevice", HelpText = "Add a new ABP device.")]
         public class AddAbpOptions {
 
             [Option("deveui",
@@ -74,7 +74,7 @@
             public string ClassType { get; set; }
         }
 
-        [Verb("addotaadevice", HelpText = "Add new OTAA device.")]
+        [Verb("addotaadevice", HelpText = "Add a new OTAA device.")]
         public class AddOtaaOptions
         {
 

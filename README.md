@@ -37,10 +37,10 @@ The following verbs are supported:
 |verb|description|
 |-|-|
 |list|Lists devices.|
-|query|Query device twin.|
-|verify|Verify device.|
-|addabpdevice|Add new ABP device.|
-|addotaadevice|Add new OTAA device.|
+|query|Query a device twin.|
+|verify|Verify a device.|
+|addabpdevice|Add a new ABP device.|
+|addotaadevice|Add a new OTAA device.|
 |help|Display more information on a specific command.|
 |version|Display version information.|
 
@@ -57,7 +57,7 @@ The list verb supports the following parameters:
 
 ## query
 
-The qurey verb supports the following parameters:
+The query verb supports the following parameters:
 
 |parameter|description|
 |-|-|
@@ -67,7 +67,7 @@ The qurey verb supports the following parameters:
 
 ## verify
 
-The qurey verb supports the following parameters:
+The verify verb supports the following parameters:
 
 |parameter|description|
 |-|-|
