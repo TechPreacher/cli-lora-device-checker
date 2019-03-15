@@ -483,17 +483,49 @@ namespace cli_lora_device_checker
             return isSuccess;
         }
 
-        public async Task QueryDevices(ConfigurationHelper configurationHelper)
+        public async Task<bool> QueryDevices(ConfigurationHelper configurationHelper, int page, int total)
         {
-            var query = configurationHelper.RegistryManager.CreateQuery("SELECT * FROM devices", 100);
+            var count = 0;
+            IEnumerable<string> currentPage;
+
+            var query = configurationHelper.RegistryManager.CreateQuery("SELECT * FROM devices", page);
+
             while (query.HasMoreResults)
             {
-                var page = await query.GetNextAsJsonAsync(); // .GetNextAsTwinAsync();
-                foreach (var json in page)
+                try
                 {
-                    Console.WriteLine(json);
+                    currentPage = await query.GetNextAsJsonAsync(); // .GetNextAsTwinAsync();
                 }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                    return false;
+                }
+
+                foreach (var jsonString in currentPage)
+                {
+                    JObject json = JObject.Parse(jsonString);
+
+                    Console.WriteLine($"DevEUI: {(string)json["deviceId"]}");
+
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    JObject desired = json.SelectToken("$.properties.desired") as JObject;
+                    desired.Remove("$metadata");
+                    desired.Remove("$version");
+                    Console.WriteLine(desired);
+                    Console.ResetColor();
+
+                    Console.WriteLine();
+
+                    if (count++ >= total-1 && total >= 0)
+                        return true;
+                }
+
+                Console.WriteLine("Press any key to continue.");
+                Console.ReadKey();
             }
+
+            return true;
         }
     }
 }

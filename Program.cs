@@ -15,6 +15,20 @@
         static ConfigurationHelper configurationHelper = new ConfigurationHelper();
         static IoTDeviceHelper iotDeviceHelper = new IoTDeviceHelper();
 
+        [Verb("list", HelpText = "Lits devices.")]
+        public class ListOptions
+        {
+            [Option("page",
+                Required = false,
+                HelpText = "Devices per page. Default is 10.")]
+            public string Page { get; set; }
+
+            [Option("total",
+                Required = false,
+                HelpText = "Maximum number of devices to list. Default is all.")]
+            public string Total { get; set; }
+        }
+
         [Verb("verify", HelpText = "Verify device.")]
         public class VerifyOptions
         {
@@ -115,8 +129,9 @@
             Console.WriteLine("http://aka.ms/lora \n");
             Console.ResetColor();
 
-            var success = Parser.Default.ParseArguments< QueryOptions, VerifyOptions, AddAbpOptions, AddOtaaOptions>(args)
+            var success = Parser.Default.ParseArguments<ListOptions, QueryOptions, VerifyOptions, AddAbpOptions, AddOtaaOptions>(args)
                 .MapResult(
+                    (ListOptions opts) => RunListAndReturnExitCode(opts),
                     (QueryOptions opts) => RunQueryAndReturnExitCode(opts),
                     (VerifyOptions opts) => RunVerifyAndReturnExitCode(opts),
                     (AddAbpOptions opts) => RunAddAbpAndReturnExitCode(opts),
@@ -136,6 +151,31 @@
                 Console.WriteLine("\nTerminated with errors.");
                 Console.ResetColor();
             }
+        }
+
+        private static object RunListAndReturnExitCode(ListOptions opts)
+        {
+            int page;
+            int total;
+
+            if (!configurationHelper.ReadConfig())
+                return false;
+
+            if (!int.TryParse(opts.Page, out page))
+                page = 10;
+
+            if (!int.TryParse(opts.Total, out total))
+                total = -1;
+
+            Console.WriteLine($"Listing devices...");
+            Console.WriteLine($"Page: {page}, Total: {total}\n");
+
+            var isSuccess = iotDeviceHelper.QueryDevices(configurationHelper, page, total).Result;
+
+            Console.WriteLine();
+            Console.WriteLine("Done.");
+            return isSuccess;
+
         }
 
         private static object RunQueryAndReturnExitCode(QueryOptions opts)
