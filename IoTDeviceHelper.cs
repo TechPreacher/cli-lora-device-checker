@@ -38,8 +38,6 @@ namespace cli_lora_device_checker
 
         public bool VerifyTwinSingle(string devEui, JObject twinData)
         {
-            var error = String.Empty;
-
             bool isOTAA = false;
             bool isABP = false;
             bool isValid = true;
@@ -64,13 +62,28 @@ namespace cli_lora_device_checker
             if (isABP && !isOTAA)
             {
                 Console.WriteLine("ABP device configuration detected.");
-                isValid = ValidateAbpDevice(appEUI, appKey, sensorDecoder, classType, out error);
+                isValid = ValidateAbpDevice(
+                    new Program.AddAbpOptions()
+                    {
+                        AppEui = appEUI, 
+                        AppKey = appKey,
+                        SensorDecoder = sensorDecoder,
+                        ClassType = classType
+                    });
             }
 
             else if (isOTAA && !isABP)
             {
                 Console.WriteLine("OTAA device configuration detected.");
-                isValid = ValidateOtaaDevice(nwkSKey, appSKey, devAddr, sensorDecoder, classType, out error);
+                isValid = ValidateOtaaDevice(
+                    new Program.AddOtaaOptions()
+                    {
+                        NwkSKey = nwkSKey,
+                        AppSKey = appSKey,
+                        DevAddr = devAddr,
+                        SensorDecoder = sensorDecoder,
+                        ClassType = classType
+                    });
             }
 
             else
@@ -79,228 +92,303 @@ namespace cli_lora_device_checker
                 isValid = false;
             }
 
-            if (!string.IsNullOrEmpty(error))
-            {
-                Console.WriteLine(error);
-            }
-
             if (isValid)
             {
-                Console.WriteLine($"The configuration for device {devEui} is valid.");
+                Console.Write($"The configuration for device {devEui} ");
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("is valid.");
+                Console.ResetColor();
+            }
+
+            else
+            {
+                Console.Write($"Error: The configuration for device {devEui} ");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("is NOT valid.");
+                Console.ResetColor();
+            }
+
+            return isValid;
+        }
+
+        public Program.AddAbpOptions CompleteMissingAbpOptionsAndClean(Program.AddAbpOptions opts)
+        {
+            if (string.IsNullOrEmpty(opts.DevEui))
+            {
+                opts.DevEui = Keygen.Generate(16);
+                Console.WriteLine($"Info: Generating missing DevEUI: {opts.DevEui}");
             }
             else
             {
-                Console.WriteLine($"Error: The configuration for device {devEui} is NOT valid.");
+                opts.DevEui = ValidationHelper.CleanString(opts.DevEui);
             }
-
-            return isValid;
-        }
-
-        public bool ValidateAbpDevice(string appEUI, string appKey, string sensorDecoder, string classType, out string error)
-        {
-            error = string.Empty;
-            var validationError = string.Empty;
-            bool isValid = true;
-
-            if (string.IsNullOrEmpty(appEUI))
-            {
-                error = "Error in configuration: Missing Twin desired property: AppEUI \n";
-                isValid = false;
-            }
-            if (ValidateKey(appEUI, 16, out validationError))
-            {
-                error = $"Error in configuration: AppEUI is invalid. {validationError} \n";
-                isValid = false;
-            }
-
-            if (string.IsNullOrEmpty(appKey))
-            {
-                error = "Error in configuration: Missing Twin desired property: AppKey \n";
-                isValid = false;
-            }
-            if (ValidateKey(appKey, 16, out validationError))
-            {
-                error = $"Error in configuration: AppKey is invalid. {validationError} \n";
-                isValid = false;
-            }
-
-            if (!string.IsNullOrEmpty(sensorDecoder))
-            {
-                isValid = ValidateSensorDecoder(sensorDecoder, out validationError);
-                error += validationError;
-            }
-
-            if (!string.IsNullOrEmpty(classType))
-            {
-                if (!string.Equals(classType, "C", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    isValid = false;
-                    error += "Error in configuration: If Twin desired property \"ClassType\" is set, it needs to be \"C\".";
-                }
-            }
-
-            if (!string.IsNullOrEmpty(error))
-                error = error.Substring(0, error.Length - 2);
-
-            return isValid;
-        }
-
-        public bool ValidateOtaaDevice(string nwkSKey, string appSKey, string devAddr, string sensorDecoder, string classType, out string error)
-        {
-            error = string.Empty;
-            var validationError = string.Empty;
-            bool isValid = true;
-            
-            if (string.IsNullOrEmpty(nwkSKey))
-            {
-                error += "Error in configuration: Missing Twin desired property: NwkSKey. \n";
-                isValid = false;
-            }
-            if (ValidateKey(nwkSKey, 16, out validationError))
-            {
-                error += $"Error in configuration: NwkSKey is invalid. {validationError} \n";
-                isValid = false;
-            }
-
-            if (string.IsNullOrEmpty(appSKey))
-            {
-                error += "Error in configuration: Missing Twin desired property: AppSKey \n";
-                isValid = false;
-            }
-            if (ValidateKey(appSKey, 16, out validationError))
-            {
-                error += $"Error in configuration: AppSKey is invalid. {validationError} \n";
-                isValid = false;
-            }
-
-            if (string.IsNullOrEmpty(devAddr))
-            {
-                error += "Error in configuration: Missing Twin desired property: DevAddr \n";
-                isValid = false;
-            }
-            if (ValidateKey(devAddr, 4, out validationError))
-            {
-                error += $"Error in configuration: DevAddr is invalid. {validationError} \n";
-                isValid = false;
-            }
-
-            if (!string.IsNullOrEmpty(sensorDecoder))
-            {
-                isValid = ValidateSensorDecoder(sensorDecoder, out validationError);
-                error += validationError;
-            }
-
-            if (!string.IsNullOrEmpty(classType))
-            {
-                if (!string.Equals(classType, "C", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    isValid = false;
-                    error += "Error in configuration: If Twin desired property \"ClassType\" is set, it needs to be \"C\".";
-                }
-            }
-
-            if (!string.IsNullOrEmpty(error))
-                error = error.Substring(0, error.Length-2);
-
-            return isValid;
-        }
-
-        private bool ValidateKey(string hexString, int byteCount, out string error)
-        {
-            error = string.Empty;
-
-            // hexString not dividable by 2.
-            if (hexString.Length % 2 > 0)
-            {
-                error = "Hex string must contain an even number of characters";
-                return false;
-            }
-
-            // hexString doesn't contain byteCount bytes.
-            if (hexString.Length / 2 != byteCount)
-            { 
-                error = $"Hex string doesn't contain the expected number of {byteCount} bytes";
-                return false;
-            }
-
-            // Verify each individual byte for validity.
-            for (int i = 0; i < hexString.Length; i += 2)
-            { 
-                if (!int.TryParse(hexString.Substring(i, 2), System.Globalization.NumberStyles.HexNumber, null, out _))
-                {
-                    error = $"Hex string contains invalid byte {hexString.Substring(i, 2)}";
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        public bool ValidateSensorDecoder(string sensorDecoder, out string error)
-        {
-            bool isValid = true;
-            error = string.Empty;
-
-            if (string.IsNullOrEmpty(sensorDecoder))
-            {
-                error += "Warning: SensorDecoder Twin desired property is empty. No decoder will be used. \n";
-            }
-
-            if (sensorDecoder.StartsWith("http"))
-            {
-                if (!Uri.TryCreate(sensorDecoder, UriKind.Absolute, out Uri validatedUri))
-                {
-                    error += "Invalid URL in URI based SensorDecoder Twin desired property. \n";
-                    isValid = false;
-                }
-                if (validatedUri.Host.Any(char.IsUpper))
-                {
-                    error += "Hostname should be all lowercase in URI based SensorDecoder Twin desired property. \n";
-                    isValid = false;
-                }
-                if (validatedUri.AbsolutePath.IndexOf("/api/") < 0)
-                {
-                    error += "\"api\" keyword is missing in URI based SensorDecoder Twin desired property. \n";
-                    isValid = false;
-                }
-            }
-            if (!isValid)
-            {
-                error += ("Make sure the URI based SensorDecoder Twin desired property looks like \"http://containername/api/decodername\". \n");
-            }
-
-            return isValid;
-        }
-
-        public async Task<bool> AddAbpDevice(Program.AddAbpOptions opts, ConfigurationHelper configurationHelper)
-        {
-            if (!configurationHelper.ReadConfig())
-                return false;
-
-            Console.WriteLine($"Adding ABP device to IoT Hub: {ConversionHelper.CleanString(opts.DevEui)} ...");
-
-            bool isSuccess = false;
-            var twinProperties = new TwinProperties();
 
             if (string.IsNullOrEmpty(opts.AppEui))
             {
                 opts.AppEui = Keygen.Generate(16);
+                Console.WriteLine($"Info: Generating missing AppEUI: {opts.AppEui}");
             }
-            twinProperties.Desired["AppEUI"] = ConversionHelper.CleanString(opts.AppEui);
+            else
+            {
+                opts.AppEui = ValidationHelper.CleanString(opts.AppEui);
+            }
 
             if (string.IsNullOrEmpty(opts.AppKey))
             {
                 opts.AppKey = Keygen.Generate(16);
+                Console.WriteLine($"Info: Generating missing AppKey: {opts.AppKey}");
             }
-            twinProperties.Desired["AppKey"] = ConversionHelper.CleanString(opts.AppKey);
+            else
+            {
+                opts.AppKey = ValidationHelper.CleanString(opts.AppKey);
+            }
 
-            twinProperties.Desired["GatewayID"] = ConversionHelper.CleanString(opts.GatewayId);
+            if (!string.IsNullOrEmpty(opts.GatewayId))
+            {
+                opts.GatewayId = ValidationHelper.CleanString(opts.GatewayId);
+            }
 
-            twinProperties.Desired["SensorDecoder"] = ConversionHelper.CleanString(opts.SensorDecoder);
+            if (!string.IsNullOrEmpty(opts.SensorDecoder))
+            {
+                opts.SensorDecoder = ValidationHelper.CleanString(opts.SensorDecoder);
+            }
 
             if (!string.IsNullOrEmpty(opts.ClassType))
             {
-                twinProperties.Desired["ClassType"] = ConversionHelper.CleanString(opts.ClassType);
+                opts.ClassType = ValidationHelper.CleanString(opts.ClassType);
+            }
+
+            return opts;
+        }
+
+        public Program.AddOtaaOptions CompleteMissingOtaaOptionsAndClean(Program.AddOtaaOptions opts)
+        {
+            if (string.IsNullOrEmpty(opts.DevEui))
+            {
+                opts.DevEui = Keygen.Generate(16);
+                Console.WriteLine($"Info: Generating missing DevEUI: {opts.DevEui}");
+            }
+            else
+            {
+                opts.DevEui = ValidationHelper.CleanString(opts.DevEui);
+            }
+
+            if (string.IsNullOrEmpty(opts.NwkSKey))
+            { 
+                opts.NwkSKey = Keygen.Generate(16);
+                Console.WriteLine($"Info: Generating missing NwkSKey: {opts.NwkSKey}");
+            }
+            {
+                opts.NwkSKey = ValidationHelper.CleanString(opts.NwkSKey);
+            }
+
+            if (string.IsNullOrEmpty(opts.AppSKey))
+            { 
+                opts.AppSKey = Keygen.Generate(16);
+                Console.WriteLine($"Info: Generating missing AppSKey: {opts.AppSKey}");
+            }
+            {
+                opts.AppSKey = ValidationHelper.CleanString(opts.AppSKey);
+            }
+
+            if (string.IsNullOrEmpty(opts.DevAddr))
+            { 
+                opts.DevAddr = Keygen.Generate(4);
+                Console.WriteLine($"Info: Generating missing DevAddr: {opts.DevAddr}");
+            }
+            {
+                opts.DevAddr = ValidationHelper.CleanString(opts.DevAddr);
+            }
+
+            if (!string.IsNullOrEmpty(opts.GatewayId))
+            {
+                opts.GatewayId = ValidationHelper.CleanString(opts.GatewayId);
+            }
+
+            if (!string.IsNullOrEmpty(opts.SensorDecoder))
+            {
+                opts.SensorDecoder = ValidationHelper.CleanString(opts.SensorDecoder);
+            }
+
+            if (!string.IsNullOrEmpty(opts.ClassType))
+            {
+                opts.ClassType = ValidationHelper.CleanString(opts.ClassType);
+            }
+
+            return opts;
+        }
+
+        public bool ValidateAbpDevice(Program.AddAbpOptions opts)
+        {
+            var validationError = string.Empty;
+            bool isValid = true;
+
+            if (string.IsNullOrEmpty(opts.AppEui))
+            {
+                Console.WriteLine("Error: AppEUI is missing.");
+                isValid = false;
+            }
+            if (!ValidationHelper.ValidateKey(opts.AppEui, 16, out validationError))
+            {
+                Console.WriteLine($"Error: AppEUI is invalid. {validationError}");
+                isValid = false;
+            }
+            else
+            {
+                Console.WriteLine($"Info: AppEui is valid: {opts.AppEui}");
+            }
+
+            if (string.IsNullOrEmpty(opts.AppKey))
+            {
+                Console.WriteLine("Error: AppKey is missing");
+                isValid = false;
+            }
+            if (!ValidationHelper.ValidateKey(opts.AppKey, 16, out validationError))
+            {
+                Console.WriteLine($"Error: AppKey is invalid. {validationError}");
+                isValid = false;
+            }
+            else
+            {
+                Console.WriteLine($"Info: AppKey is valid: {opts.AppKey}");
+            }
+
+            if (!ValidationHelper.ValidateSensorDecoder(opts.SensorDecoder, out validationError))
+            {
+                isValid = false;
+            }
+            if (!string.IsNullOrEmpty(validationError))
+            {
+                Console.WriteLine(validationError);
+            }
+            else
+            {
+                Console.WriteLine($"Info: SensorDecoder is valid: {opts.SensorDecoder}");
+            }
+
+            if (!string.IsNullOrEmpty(opts.ClassType))
+            {
+                if (!string.Equals(opts.ClassType, "C", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    isValid = false;
+                    Console.WriteLine("Error: If ClassType is set, it needs to be \"C\".");
+                }
+                else
+                {
+                    Console.WriteLine($"Info: ClassType is valid: {opts.ClassType}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Info: ClassType is empty.");
+            }
+
+            return isValid;
+        }
+
+        public bool ValidateOtaaDevice(Program.AddOtaaOptions opts)
+        {
+            var validationError = string.Empty;
+            bool isValid = true;
+            
+            if (string.IsNullOrEmpty(opts.NwkSKey))
+            {
+                Console.WriteLine("Error: NwkSKey is missing.");
+                isValid = false;
+            }
+            if (!ValidationHelper.ValidateKey(opts.NwkSKey, 16, out validationError))
+            {
+                Console.WriteLine($"Error: NwkSKey is invalid. {validationError}");
+                isValid = false;
+            }
+            else
+            {
+                Console.WriteLine($"Info: NwkSKey is valid: {opts.NwkSKey}");
+            }
+
+            if (string.IsNullOrEmpty(opts.AppSKey))
+            {
+                Console.WriteLine("Error: AppSKey is missing.");
+                isValid = false;
+            }
+            if (!ValidationHelper.ValidateKey(opts.AppSKey, 16, out validationError))
+            {
+                Console.WriteLine($"Error: AppSKey is invalid. {validationError}");
+                isValid = false;
+            }
+            else
+            {
+                Console.WriteLine($"Info: AppSKey is valid: {opts.AppSKey}");
+            }
+
+            if (string.IsNullOrEmpty(opts.DevAddr))
+            {
+                Console.WriteLine("Error: DevAddr is missing.");
+                isValid = false;
+            }
+            if (!ValidationHelper.ValidateKey(opts.DevAddr, 4, out validationError))
+            {
+                Console.WriteLine($"Error: DevAddr is invalid. {validationError}");
+                isValid = false;
+            }
+            else
+            {
+                Console.WriteLine($"Info: DevAddr is valid: {opts.DevAddr}");
+            }
+
+            if (!ValidationHelper.ValidateSensorDecoder(opts.SensorDecoder, out validationError))
+            {
+                isValid = false;
+            }
+            if (!string.IsNullOrEmpty(validationError))
+            {
+                Console.WriteLine(validationError);
+            }
+            else
+            {
+                Console.WriteLine($"Info: SensorDecoder is valid: {opts.SensorDecoder}");
+            }
+
+            if (!string.IsNullOrEmpty(opts.ClassType))
+            {
+                if (!string.Equals(opts.ClassType, "C", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    isValid = false;
+                    Console.WriteLine("Error: If ClassType is set, it needs to be \"C\".");
+                }
+                else
+                {
+                    Console.WriteLine($"Info: ClassType is valid: {opts.ClassType}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Info: ClassType is empty");
+            }
+
+            return isValid;
+        }
+
+
+
+        public async Task<bool> AddAbpDevice(Program.AddAbpOptions opts, ConfigurationHelper configurationHelper)
+        {
+            Console.WriteLine($"Adding ABP device to IoT Hub: {opts.DevEui} ...");
+
+            bool isSuccess = false;
+            var twinProperties = new TwinProperties();
+
+            twinProperties.Desired["AppEUI"] = opts.AppEui;
+
+            twinProperties.Desired["AppKey"] = opts.AppKey;
+
+            twinProperties.Desired["GatewayID"] = opts.GatewayId;
+
+            twinProperties.Desired["SensorDecoder"] = opts.SensorDecoder;
+
+            if (!string.IsNullOrEmpty(opts.ClassType))
+            {
+                twinProperties.Desired["ClassType"] = opts.ClassType;
             }
 
             var twin = new Twin();
@@ -316,13 +404,13 @@ namespace cli_lora_device_checker
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
+                Console.WriteLine($"Error: {ex.Message}\n");
                 return false;
             }
 
             if (result.IsSuccessful)
             {
-                Console.WriteLine($"Done!");
+                Console.WriteLine($"Success!\n");
                 isSuccess = true;
             }
             else
@@ -332,6 +420,7 @@ namespace cli_lora_device_checker
                 {
                     Console.WriteLine($"Device Id: {error.DeviceId}, Code: {error.ErrorCode}, Error: {error.ErrorStatus}");
                 }
+                Console.WriteLine();
                 isSuccess = false;
             }
             return isSuccess;
@@ -339,27 +428,15 @@ namespace cli_lora_device_checker
 
         public async Task<bool> AddOtaaDevice(Program.AddOtaaOptions opts, ConfigurationHelper configurationHelper)
         {
-            Console.WriteLine($"Adding OTAA device to IoT Hub: {ConversionHelper.CleanString(opts.DevEui)} ...");
+            Console.WriteLine($"Adding OTAA device to IoT Hub: {opts.DevEui} ...");
 
             bool isSuccess = false;
             var twinProperties = new TwinProperties();
 
-            if (string.IsNullOrEmpty(opts.AppSKey))
-            {
-                opts.AppSKey = Keygen.Generate(16);
-            }
-            twinProperties.Desired["AppSKey"] = ConversionHelper.CleanString(opts.AppSKey);
+            twinProperties.Desired["AppSKey"] = opts.AppSKey;
 
-            if (string.IsNullOrEmpty(opts.NwkSKey))
-            {
-                opts.NwkSKey = Keygen.Generate(16);
-            }
-            twinProperties.Desired["NwkSKey"] = ConversionHelper.CleanString(opts.NwkSKey);
+            twinProperties.Desired["NwkSKey"] = opts.NwkSKey;
 
-            if (string.IsNullOrEmpty(opts.NwkSKey))
-            {
-                opts.NwkSKey = Keygen.Generate(4);
-            }
             twinProperties.Desired["DevAddr"] = opts.DevAddr;
 
             twinProperties.Desired["GatewayID"] = opts.GatewayId;
@@ -368,7 +445,7 @@ namespace cli_lora_device_checker
 
             if (!string.IsNullOrEmpty(opts.ClassType))
             {
-                twinProperties.Desired["ClassType"] = ConversionHelper.CleanString(opts.ClassType);
+                twinProperties.Desired["ClassType"] = opts.ClassType;
             }
 
             var twin = new Twin();
@@ -384,13 +461,13 @@ namespace cli_lora_device_checker
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
+                Console.WriteLine($"Error: {ex.Message}\n");
                 return false;
             }
 
             if (result.IsSuccessful)
             {
-                Console.WriteLine($"Done!");
+                Console.WriteLine($"Done!\n");
                 isSuccess = true;
             }
             else
@@ -400,6 +477,7 @@ namespace cli_lora_device_checker
                 {
                     Console.WriteLine($"Device Id: {error.DeviceId}, Code: {error.ErrorCode}, Error: {error.ErrorStatus}");
                 }
+                Console.WriteLine();
                 isSuccess = false;
             }
             return isSuccess;
@@ -410,7 +488,7 @@ namespace cli_lora_device_checker
             var query = configurationHelper.RegistryManager.CreateQuery("SELECT * FROM devices", 100);
             while (query.HasMoreResults)
             {
-                var page = await query.GetNextAsJsonAsync(); //  .GetNextAsTwinAsync();
+                var page = await query.GetNextAsJsonAsync(); // .GetNextAsTwinAsync();
                 foreach (var json in page)
                 {
                     Console.WriteLine(json);

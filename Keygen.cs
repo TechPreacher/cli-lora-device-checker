@@ -14,7 +14,7 @@ namespace cli_lora_device_checker
             for (int i = 0; i < keyLength; i++)
             { 
                 var newKey = rnd.Next(0, 255);
-                randomKey += newKey.ToString("X");
+                randomKey += newKey.ToString("X2");
             }
 
             return randomKey;

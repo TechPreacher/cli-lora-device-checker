@@ -24,8 +24,8 @@
             public string DevEui { get; set; }
         }
 
-        [Verb("show", HelpText = "Show device twin.")]
-        public class ShowOptions
+        [Verb("query", HelpText = "Query device twin.")]
+        public class QueryOptions
         {
             [Option("deveui",
                 Required = true,
@@ -37,18 +37,18 @@
         public class AddAbpOptions {
 
             [Option("deveui",
-                Required = true,
-                HelpText = "DevEUI / Device Id.")]
+                Required = false,
+                HelpText = "DevEUI / Device Id. Will be randomly generated if left blank.")]
             public string DevEui { get; set; }
 
             [Option("appeui",
-                Required = true,
-                HelpText = "AppEUI.")]
+                Required = false,
+                HelpText = "AppEUI. Will be randomly generated if left blank.")]
             public string AppEui { get; set; }
 
             [Option("appkey",
-                Required = true,
-                HelpText = "AppKey.")]
+                Required = false,
+                HelpText = "AppKey. Will be randomly generated if left blank.")]
             public string AppKey { get; set; }
 
             [Option("gatewayid",
@@ -72,23 +72,23 @@
         {
 
             [Option("deveui",
-                Required = true,
-                HelpText = "DevEUI / Device Id.")]
+                Required = false,
+                HelpText = "DevEUI / Device Id. Will be randomly generated if left blank.")]
             public string DevEui { get; set; }
 
             [Option("appskey",
-                Required = true,
-                HelpText = "AppSKey.")]
+                Required = false,
+                HelpText = "AppSKey. Will be randomly generated if left blank.")]
             public string AppSKey { get; set; }
 
             [Option("nwkskey",
-                Required = true,
-                HelpText = "NwkSKey.")]
+                Required = false,
+                HelpText = "NwkSKey. Will be randomly generated if left blank.")]
             public string NwkSKey { get; set; }
 
             [Option("devaddr",
-                Required = true,
-                HelpText = "DevAddr.")]
+                Required = false,
+                HelpText = "DevAddr. Will be randomly generated if left blank.")]
             public string DevAddr { get; set; }
 
             [Option("gatewayid",
@@ -109,11 +109,15 @@
 
         static void Main(string[] args)
         {
-            Console.WriteLine("Azure IoT Edge LoRaWAN Starter Kit LoRa Leaf Device Verification Utility. http://aka.ms/lora");
+            Console.WriteLine("Azure IoT Edge LoRaWAN Starter Kit LoRa Leaf Device Verification Utility.");
+            Console.Write("This tool complements ");
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine("http://aka.ms/lora \n");
+            Console.ResetColor();
 
-            var success = Parser.Default.ParseArguments< ShowOptions, VerifyOptions, AddAbpOptions, AddOtaaOptions>(args)
+            var success = Parser.Default.ParseArguments< QueryOptions, VerifyOptions, AddAbpOptions, AddOtaaOptions>(args)
                 .MapResult(
-                    (ShowOptions opts) => RunShowAndReturnExitCode(opts),
+                    (QueryOptions opts) => RunQueryAndReturnExitCode(opts),
                     (VerifyOptions opts) => RunVerifyAndReturnExitCode(opts),
                     (AddAbpOptions opts) => RunAddAbpAndReturnExitCode(opts),
                     (AddOtaaOptions opts) => RunAddOtaaAndReturnExitCode(opts),
@@ -121,21 +125,33 @@
                 );
 
             if ((bool)success)
-                Console.WriteLine("Successfully terminated.");
+            { 
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("\nSuccessfully terminated.");
+                Console.ResetColor();
+            }
             else
-                Console.WriteLine("Terminated with errors.");
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("\nTerminated with errors.");
+                Console.ResetColor();
+            }
         }
 
-        private static object RunShowAndReturnExitCode(ShowOptions opts)
+        private static object RunQueryAndReturnExitCode(QueryOptions opts)
         {
             if (!configurationHelper.ReadConfig())
                 return false;
 
-            Console.WriteLine($"Querying DevEUI: {opts.DevEui} ...");
+            Console.WriteLine($"Querying DevEUI: {opts.DevEui} ...\n");
+
             var twinData = iotDeviceHelper.QueryTwinSingle(opts.DevEui, configurationHelper).Result;
             if (twinData != null)
             {
+                Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine(twinData.ToString());
+                Console.ResetColor();
+                Console.WriteLine();
                 return true;
             }
             else
@@ -150,14 +166,18 @@
             if (!configurationHelper.ReadConfig())
                 return false;
 
-            Console.WriteLine($"Querying DevEUI: {opts.DevEui} ...");
+            Console.WriteLine($"Querying DevEUI: {opts.DevEui} ...\n");
+
             var twinData = iotDeviceHelper.QueryTwinSingle(opts.DevEui, configurationHelper).Result;
 
             if (twinData != null)
             {
+                Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine(twinData.ToString());
+                Console.ResetColor();
+                Console.WriteLine();
 
-                Console.WriteLine($"Verify Device: {opts.DevEui} ...");
+                Console.WriteLine($"Verifying Device: {opts.DevEui} ...\n");
                 return iotDeviceHelper.VerifyTwinSingle(opts.DevEui, twinData);
             }
             else
@@ -174,20 +194,25 @@
 
             bool isSuccess = false;
 
-            if (iotDeviceHelper.ValidateAbpDevice(opts.AppEui, opts.AppKey, opts.SensorDecoder, opts.ClassType, out string error))
+            opts = iotDeviceHelper.CompleteMissingAbpOptionsAndClean(opts);
+
+            if (iotDeviceHelper.ValidateAbpDevice(opts))
             {
                 isSuccess = iotDeviceHelper.AddAbpDevice(opts, configurationHelper).Result;
             }
             else
             {
-                Console.WriteLine("Can not add ABP device. The following errors occurred: \n" + error);
+                Console.WriteLine("Can not add ABP device.");
             }
 
             if (isSuccess)
             { 
-                Console.WriteLine($"Querying DevEUI: {opts.DevEui} ...");
+                Console.WriteLine($"Querying DevEUI: {opts.DevEui} ...\n");
+                Console.ForegroundColor = ConsoleColor.Yellow;
                 var twinData = iotDeviceHelper.QueryTwinSingle(opts.DevEui, configurationHelper).Result;
                 Console.WriteLine(twinData.ToString());
+                Console.ResetColor();
+                Console.WriteLine();
             }
 
             return isSuccess;
@@ -200,16 +225,25 @@
 
             bool isSuccess = false;
 
-            if (iotDeviceHelper.ValidateSensorDecoder(opts.SensorDecoder))
+            opts = iotDeviceHelper.CompleteMissingOtaaOptionsAndClean(opts);
+
+            if (iotDeviceHelper.ValidateOtaaDevice(opts))
             {
                 isSuccess = iotDeviceHelper.AddOtaaDevice(opts, configurationHelper).Result;
+            }
+            else
+            {
+                Console.WriteLine("Can not add OTAA device.");
             }
 
             if (isSuccess)
             {
-                Console.WriteLine($"Querying DevEUI: {opts.DevEui} ...");
+                Console.WriteLine($"Querying DevEUI: {opts.DevEui} ...\n");
+                Console.ForegroundColor = ConsoleColor.Yellow;
                 var twinData = iotDeviceHelper.QueryTwinSingle(opts.DevEui, configurationHelper).Result;
                 Console.WriteLine(twinData.ToString());
+                Console.ResetColor();
+                Console.WriteLine();
             }
 
             return isSuccess;

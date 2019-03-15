@@ -9,6 +9,7 @@ namespace cli_lora_device_checker
 {
     public class ConfigurationHelper
     {
+        public string ConnectionString { get; set; }
         public RegistryManager RegistryManager { get; set; }
 
         public bool ReadConfig()
@@ -32,7 +33,9 @@ namespace cli_lora_device_checker
                 return false;
             }
 
-            Console.WriteLine($"Using connection string: {connectionString}");
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine($"Using connection string: {connectionString} \n");
+            Console.ResetColor();
 
             try
             {
