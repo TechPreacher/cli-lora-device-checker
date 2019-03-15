@@ -77,6 +77,8 @@ The verify verb supports the following parameters:
 
 ## addabpdevice
 
+The addabpdevice verb supports the following parameters:
+
 |parameter|description|
 |-|-|
 |--deveui|DevEUI / Device Id. Will be randomly generated if left blank.|
@@ -89,6 +91,8 @@ The verify verb supports the following parameters:
 |--version|Display version information.|
 
 ## addotaadevice
+
+The addotaadevice verb supports the following parameters:
 
 |parameter|description|
 |-|-|
