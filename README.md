@@ -12,10 +12,10 @@ dotnet publish -c Release -r win10-x64
 
 ## Running
 
-You can run the tool from the command line using using .NET Core by executing
+You can run the tool from the command line using .NET Core by executing
 
 ```bash
-dotnet run -- (add verbs here)
+dotnet run -- (add verbs and parameters here)
 ```
 
 ## Setting up
@@ -26,7 +26,7 @@ dotnet run -- (add verbs here)
 
 ```json
 {
-  "IoTHubConnectionString": "HostName=myiothub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=AeVMLayazGTS9QRMJtFGSSNwdhUdYR5VwCjaafc3DL0=",
+  "IoTHubConnectionString": "HostName=youriothub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=AeVMLayazGTS9QRMJtFGSSNwdhUdYR5VwCjaafc3DL0=",
 }
 ```
 
